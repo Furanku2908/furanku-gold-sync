@@ -1,0 +1,9 @@
+## Interface: 120005
+## Title: Furanku Gold Sync
+## Notes: Automatically balances your gold with the Warband Bank
+## Author: Furanku2908
+## Version: 0.1.0
+## SavedVariables: FGS_DB
+
+Core.lua
+Options.lua
