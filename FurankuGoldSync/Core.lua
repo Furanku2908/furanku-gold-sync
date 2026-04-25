@@ -1,10 +1,10 @@
 local addonName, addon = ...
 
--- constants / yettings
+-- constants
 local PREFIX = "|cffA335EE[FGS]|r "
 local FULLNAME = "|cffA335EE[Furanku Gold Sync]|r "
 
--- helper-functions
+-- helper functions
 local function Print(msg)
     print(PREFIX .. tostring(msg))
 end
@@ -13,12 +13,12 @@ local function NamePrint(msg)
 end
 
 
--- main-function
+-- main logic
 local function OnLogin()
     Print("Loaded!")
 end
 
--- register events
+-- event registration
 local frame = CreateFrame("Frame")
 frame:RegisterEvent("PLAYER_LOGIN")
 
