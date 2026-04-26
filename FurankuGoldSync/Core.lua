@@ -29,7 +29,7 @@ local function HandleSlashCommand(msg)
     local command, rest = msg:match("^(%S*)%s*(.-)$")
     command = string.lower(command or "")
 
-    if command == "" or command == "help" then
+    if command == "help" then
         Print("Help command detected")
 
     elseif command == "set" then
@@ -41,7 +41,9 @@ local function HandleSlashCommand(msg)
 
     elseif command == "status" then
         Print("Status command detected")
-
+    
+    elseif command == "options" or command == "config" or command == "opt" or command == "conf" or command == ""   
+        Print("Option command detected")
     else
         Print("Unknown command: " .. tostring(command))
         Print("Use /fgs help or /fgsync help")
