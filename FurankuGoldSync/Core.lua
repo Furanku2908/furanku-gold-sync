@@ -15,7 +15,37 @@ end
 
 -- main logic
 local function OnLogin()
-    Print("Loaded!")
+    SLASH_FURANKUGOLDSYNC1 = "/fgs"
+    SLASH_FURANKUGOLDSYNC2 = "/fgsync"
+
+    SlashCmdList["FURANKUGOLDSYNC"] = HandleSlashCommand
+
+    NamePrint("Loaded!")
+end
+-- slash command handling
+local function HandleSlashCommand(msg)
+    msg = msg or ""
+
+    local command, rest = msg:match("^(%S*)%s*(.-)$")
+    command = string.lower(command or "")
+
+    if command == "" or command == "help" then
+        Print("Help command detected")
+
+    elseif command == "set" then
+        Print("Set command detected with value: " .. tostring(rest))
+
+    elseif command == "auto" then
+        local autoValue = string.lower(rest or "")
+        Print("Auto command detected with value: " .. tostring(autoValue))
+
+    elseif command == "status" then
+        Print("Status command detected")
+
+    else
+        Print("Unknown command: " .. tostring(command))
+        Print("Use /fgs help or /fgsync help")
+    end
 end
 
 -- event registration
