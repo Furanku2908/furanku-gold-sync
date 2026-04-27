@@ -16,8 +16,13 @@ local defaults = {
 local function Print(msg)
     print(PREFIX .. tostring(msg))
 end
+
 local function NamePrint(msg)
     print(FULLNAME .. tostring(msg))
+end
+
+local function IsWarbandBankInteraction(interactionType)
+    return interactionType == 8 or interactionType == 68
 end
 
 -- command functions
@@ -91,16 +96,6 @@ local function ApplyDefaults()
     end
 end
 
-
--- main logic
-local function OnLogin()
-    SLASH_FURANKUGOLDSYNC1 = "/fgs"
-    SLASH_FURANKUGOLDSYNC2 = "/fgsync"
-
-    SlashCmdList["FURANKUGOLDSYNC"] = HandleSlashCommand
-    ApplyDefaults()
-    NamePrint("Loaded!")
-end
 -- slash command handling
 local function HandleSlashCommand(msg)
     msg = msg or ""
@@ -121,7 +116,7 @@ local function HandleSlashCommand(msg)
     elseif command == "status" then
         StatusCommand()
     
-    elseif command == "options" or command == "config" or command == "opt" or command == "conf" or command == ""   
+    elseif command == "options" or command == "config" or command == "opt" or command == "conf" or command == ""  then
         Print("Option command detected")
     else
         Print("Unknown command: " .. tostring(command))
@@ -129,12 +124,36 @@ local function HandleSlashCommand(msg)
     end
 end
 
+
+-- main logic
+local function OnLogin()
+    SLASH_FURANKUGOLDSYNC1 = "/fgs"
+    SLASH_FURANKUGOLDSYNC2 = "/fgsync"
+
+    SlashCmdList["FURANKUGOLDSYNC"] = HandleSlashCommand
+    ApplyDefaults()
+    NamePrint("Loaded!")
+end
+
 -- event registration
 local frame = CreateFrame("Frame")
 frame:RegisterEvent("PLAYER_LOGIN")
+frame:RegisterEvent("PLAYER_INTERACTION_MANAGER_FRAME_SHOW")
 
-frame:SetScript("OnEvent", function(self, event)
+frame:SetScript("OnEvent", function(self, event, ...)
     if event == "PLAYER_LOGIN" then
         OnLogin()
+
+    elseif event == "PLAYER_INTERACTION_MANAGER_FRAME_SHOW" then
+        local interactionType = ...
+        Print("Interaction opened: " .. tostring(interactionType))
+        if IsWarbandBankInteraction(interactionType) then
+            Print("Warband bank detected")
+            if FGS_DB.autoSync then
+                Print("Auto sync would run now")
+            else
+                 Print("Auto sync is disabled")
+            end
+        end
     end
 end)
