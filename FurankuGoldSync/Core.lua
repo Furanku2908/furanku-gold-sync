@@ -4,12 +4,91 @@ local addonName, addon = ...
 local PREFIX = "|cffA335EE[FGS]|r "
 local FULLNAME = "|cffA335EE[Furanku Gold Sync]|r "
 
+-- defaults
+FGS_DB = FGS_DB or {}
+
+local defaults = {
+    targetGold = 50000,
+    autoSync = false,
+}
+
 -- helper functions
 local function Print(msg)
     print(PREFIX .. tostring(msg))
 end
 local function NamePrint(msg)
     print(FULLNAME .. tostring(msg))
+end
+
+-- command functions
+local function SetAutoSync(value)
+    value = string.lower(value or "")
+
+    if value == "" then
+        FGS_DB.autoSync = not (FGS_DB.autoSync == true)
+
+        if FGS_DB.autoSync then
+            Print("Auto sync enabled")
+        else
+            Print("Auto sync disabled")
+        end
+
+    elseif value == "on" or value == "an" or value == "1" then
+        FGS_DB.autoSync = true
+        Print("Auto sync enabled")
+
+    elseif value == "off" or value == "aus" or value == "0" then
+        FGS_DB.autoSync = false
+        Print("Auto sync disabled")
+
+    else
+        Print("Unknown value for auto sync: " .. tostring(value))
+    end
+end
+
+local function SetTargetGold(value)
+    local amount = tonumber(value)
+    if amount == nil then
+        Print("Invalid gold amount. Use e.g.: /fgs set 50000")
+        return
+    end
+
+    if amount < 0 then
+        Print("Gold amount cannot be negative.")
+        return
+    end
+
+    FGS_DB.targetGold = math.floor(amount)
+    Print("Target Gold set to: " .. tostring(FGS_DB.targetGold))
+end
+
+local function StatusCommand()
+    local targetGold = ("Target Gold is set to " .. tostring(FGS_DB.targetGold) .. " Gold") 
+    local sync = FGS_DB.autoSync and "Auto sync is enabled" or "Auto sync is disabled"
+
+    Print("Current Status:")
+    Print(sync)
+    Print(targetGold)
+end    
+
+local function HelpCommand()
+    Print("Commands:")
+    Print("/fgs or /fgsync for Options")
+    Print("/fgs set <gold> to set target gold amount")
+    Print("/fgs auto [on|off] to toggle auto sync")
+    Print("/fgs status to see current settings")
+    
+end
+
+
+
+-- apply defaults
+local function ApplyDefaults()
+    for key, value in pairs(defaults) do
+        if FGS_DB[key] == nil then
+            FGS_DB[key] = value
+        end
+    end
 end
 
 
@@ -19,7 +98,7 @@ local function OnLogin()
     SLASH_FURANKUGOLDSYNC2 = "/fgsync"
 
     SlashCmdList["FURANKUGOLDSYNC"] = HandleSlashCommand
-
+    ApplyDefaults()
     NamePrint("Loaded!")
 end
 -- slash command handling
@@ -30,17 +109,17 @@ local function HandleSlashCommand(msg)
     command = string.lower(command or "")
 
     if command == "help" then
-        Print("Help command detected")
+        HelpCommand()
 
     elseif command == "set" then
-        Print("Set command detected with value: " .. tostring(rest))
+        SetTargetGold(rest)
 
     elseif command == "auto" then
         local autoValue = string.lower(rest or "")
-        Print("Auto command detected with value: " .. tostring(autoValue))
+        SetAutoSync(autoValue)
 
     elseif command == "status" then
-        Print("Status command detected")
+        StatusCommand()
     
     elseif command == "options" or command == "config" or command == "opt" or command == "conf" or command == ""   
         Print("Option command detected")
