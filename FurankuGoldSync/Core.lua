@@ -171,9 +171,13 @@ frame:SetScript("OnEvent", function(self, event, ...)
                 elseif differenceMoney < 0 then
                     local difGold, difSilver, difCopper = MoneyConverter(-differenceMoney)
                     Print("Missing: " .. difGold .."g " .. difSilver .. "s " .. difCopper .. "c")
+                    Print("Withdrawing missing gold")
+                    C_Bank.WithdrawMoney(Enum.BankType.Account, -differenceMoney)
                 else
                     local difGold, difSilver, difCopper = MoneyConverter(differenceMoney)
                     Print("Excess: " .. difGold .."g " .. difSilver .. "s " .. difCopper .. "c")
+                    Print("Depositing excess gold")
+                    C_Bank.DepositMoney(Enum.BankType.Account, differenceMoney)
                 end
 
                 
