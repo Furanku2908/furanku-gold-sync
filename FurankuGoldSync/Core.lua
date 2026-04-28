@@ -156,7 +156,8 @@ local function OnLogin()
 
     SlashCmdList["FURANKUGOLDSYNC"] = HandleSlashCommand
     ApplyDefaults()
-    NamePrint("Loaded!")
+    local ICON = "|TInterface\\AddOns\\FurankuGoldSync\\media\\icon:16:16|t "
+    NamePrint(ICON .. "Loaded!")
 end
 
 -- event registration
