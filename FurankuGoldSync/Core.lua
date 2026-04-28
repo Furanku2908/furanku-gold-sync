@@ -33,6 +33,18 @@ local function MoneyConverter (amount)
     return gold, silver, copper
 end
 
+local function FormatMoney(amount)
+    local g, s, c = MoneyConverter(amount)
+
+    if s == 0 and c == 0 then
+        return g .. "g"
+    elseif c == 0 then
+        return g .. "g " .. s .. "s"
+    else
+        return g .. "g " .. s .. "s " .. c .. "c"
+    end
+end
+
 -- command functions
 local function SetAutoSync(value)
     value = string.lower(value or "")
@@ -164,27 +176,24 @@ frame:SetScript("OnEvent", function(self, event, ...)
                 local targetMoney = (targetGold * 10000)
                 local differenceMoney = playerMoney - targetMoney
                 local bankMoney = C_Bank.FetchDepositedMoney(Enum.BankType.Account) or 0
-                local playerGold, playerSilver, playerCopper = MoneyConverter(playerMoney)
-                Print("Curent gold: " .. playerGold .. "g " .. playerSilver .. "s " .. playerCopper.. "c")
-                Print("Target gold: " .. targetGold .. "g")
+                Print("Curent gold: " .. FormatMoney(playerMoney))
+                Print("Target gold: " .. FormatMoney(targetMoney))
                 if differenceMoney == 0 then
                     Print("Gold synced.")
                 elseif differenceMoney < 0 then
-                    local difGold, difSilver, difCopper = MoneyConverter(-differenceMoney)
-                    Print("Missing: " .. difGold .."g " .. difSilver .. "s " .. difCopper .. "c")
+                    Print("Missing: " .. FormatMoney(-differenceMoney))
                     if bankMoney == 0 then
                         Print("Warbank has no gold to withdraw.") 
                     elseif bankMoney < -differenceMoney then
-                        local bankGold, bankSilver, bankCopper = MoneyConverter(bankMoney)
-                        Print("Not enough gold in Warband Bank. Withdrawing remaining: " .. bankGold .. "g " .. bankSilver .. "s " .. bankCopper .. "c")
+                        
+                        Print("Not enough gold in Warband Bank. Withdrawing remaining: " .. FormatMoney(bankGold) )
                         C_Bank.WithdrawMoney(Enum.BankType.Account, bankMoney)
                     else
                         Print("Withdrawing missing gold")
                         C_Bank.WithdrawMoney(Enum.BankType.Account, -differenceMoney)
                     end
                 else
-                    local difGold, difSilver, difCopper = MoneyConverter(differenceMoney)
-                    Print("Excess: " .. difGold .."g " .. difSilver .. "s " .. difCopper .. "c")
+                    Print("Excess: " .. FormatMoney(differenceMoney))
                     Print("Depositing excess gold.")
                     C_Bank.DepositMoney(Enum.BankType.Account, differenceMoney)
                 end
