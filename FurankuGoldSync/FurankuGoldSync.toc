@@ -4,6 +4,7 @@
 ## Author: Furanku2908
 ## Version: 0.1.0
 ## SavedVariables: FGS_DB
+## IconTexture: Interface\AddOns\FurankuGoldSync\media\icon
 
 Core.lua
 Options.lua
