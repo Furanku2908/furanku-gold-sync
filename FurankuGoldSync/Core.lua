@@ -186,7 +186,7 @@ frame:SetScript("OnEvent", function(self, event, ...)
                         Print("Warbank has no gold to withdraw.") 
                     elseif bankMoney < -differenceMoney then
                         
-                        Print("Not enough gold in Warband Bank. Withdrawing remaining: " .. FormatMoney(bankGold) )
+                        Print("Not enough gold in Warband Bank. Withdrawing remaining: " .. FormatMoney(bankMoney) )
                         C_Bank.WithdrawMoney(Enum.BankType.Account, bankMoney)
                     else
                         Print("Withdrawing missing gold")
