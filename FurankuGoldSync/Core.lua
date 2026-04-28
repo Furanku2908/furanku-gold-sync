@@ -163,20 +163,29 @@ frame:SetScript("OnEvent", function(self, event, ...)
                 local targetGold = FGS_DB.targetGold
                 local targetMoney = (targetGold * 10000)
                 local differenceMoney = playerMoney - targetMoney
+                local bankMoney = C_Bank.FetchDepositedMoney(Enum.BankType.Account) or 0
                 local playerGold, playerSilver, playerCopper = MoneyConverter(playerMoney)
                 Print("Curent gold: " .. playerGold .. "g " .. playerSilver .. "s " .. playerCopper.. "c")
                 Print("Target gold: " .. targetGold .. "g")
                 if differenceMoney == 0 then
-                    Print("Gold synced")
+                    Print("Gold synced.")
                 elseif differenceMoney < 0 then
                     local difGold, difSilver, difCopper = MoneyConverter(-differenceMoney)
                     Print("Missing: " .. difGold .."g " .. difSilver .. "s " .. difCopper .. "c")
-                    Print("Withdrawing missing gold")
-                    C_Bank.WithdrawMoney(Enum.BankType.Account, -differenceMoney)
+                    if bankMoney == 0 then
+                        Print("Warbank has no gold to withdraw.") 
+                    elseif bankMoney < -differenceMoney then
+                        local bankGold, bankSilver, bankCopper = MoneyConverter(bankMoney)
+                        Print("Not enough gold in Warband Bank. Withdrawing remaining: " .. bankGold .. "g " .. bankSilver .. "s " .. bankCopper .. "c")
+                        C_Bank.WithdrawMoney(Enum.BankType.Account, bankMoney)
+                    else
+                        Print("Withdrawing missing gold")
+                        C_Bank.WithdrawMoney(Enum.BankType.Account, -differenceMoney)
+                    end
                 else
                     local difGold, difSilver, difCopper = MoneyConverter(differenceMoney)
                     Print("Excess: " .. difGold .."g " .. difSilver .. "s " .. difCopper .. "c")
-                    Print("Depositing excess gold")
+                    Print("Depositing excess gold.")
                     C_Bank.DepositMoney(Enum.BankType.Account, differenceMoney)
                 end
 
