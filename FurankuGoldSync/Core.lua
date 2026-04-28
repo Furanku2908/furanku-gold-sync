@@ -166,11 +166,11 @@ frame:SetScript("OnEvent", function(self, event, ...)
 
     elseif event == "PLAYER_INTERACTION_MANAGER_FRAME_SHOW" then
         local interactionType = ...
-        Print("Interaction opened: " .. tostring(interactionType))
+        --Print("Interaction opened: " .. tostring(interactionType))
         if IsWarbandBankInteraction(interactionType) then
-            Print("Warband bank detected")
+            --Print("Warband bank detected")
             if FGS_DB.autoSync then
-                Print("Auto sync would run now")
+                --Print("Auto sync would run now")
                 local playerMoney = GetMoney()
                 local targetGold = FGS_DB.targetGold
                 local targetMoney = (targetGold * 10000)
@@ -197,8 +197,6 @@ frame:SetScript("OnEvent", function(self, event, ...)
                     Print("Depositing excess gold.")
                     C_Bank.DepositMoney(Enum.BankType.Account, differenceMoney)
                 end
-
-                
 
             else
                  Print("Auto sync is disabled")
