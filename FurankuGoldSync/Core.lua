@@ -25,6 +25,14 @@ local function IsWarbandBankInteraction(interactionType)
     return interactionType == 8 or interactionType == 68
 end
 
+local function MoneyConverter (amount)
+    local gold = math.floor(amount / 10000)
+    local silver = math.floor((amount % 10000) /100)
+    local copper = amount % 100
+
+    return gold, silver, copper
+end
+
 -- command functions
 local function SetAutoSync(value)
     value = string.lower(value or "")
@@ -151,6 +159,25 @@ frame:SetScript("OnEvent", function(self, event, ...)
             Print("Warband bank detected")
             if FGS_DB.autoSync then
                 Print("Auto sync would run now")
+                local playerMoney = GetMoney()
+                local targetGold = FGS_DB.targetGold
+                local targetMoney = (targetGold * 10000)
+                local differenceMoney = playerMoney - targetMoney
+                local playerGold, playerSilver, playerCopper = MoneyConverter(playerMoney)
+                Print("Curent gold: " .. playerGold .. "g " .. playerSilver .. "s " .. playerCopper.. "c")
+                Print("Target gold: " .. targetGold .. "g")
+                if differenceMoney == 0 then
+                    Print("Gold synced")
+                elseif differenceMoney < 0 then
+                    local difGold, difSilver, difCopper = MoneyConverter(-differenceMoney)
+                    Print("Missing: " .. difGold .."g " .. difSilver .. "s " .. difCopper .. "c")
+                else
+                    local difGold, difSilver, difCopper = MoneyConverter(differenceMoney)
+                    Print("Excess: " .. difGold .."g " .. difSilver .. "s " .. difCopper .. "c")
+                end
+
+                
+
             else
                  Print("Auto sync is disabled")
             end
