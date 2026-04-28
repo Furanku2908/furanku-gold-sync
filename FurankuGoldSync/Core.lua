@@ -46,6 +46,10 @@ local function FormatMoney(amount)
 end
 
 -- command functions
+local function OpenOptions()
+    Settings.OpenToCategory(addon.optionsCategory.ID)
+end
+
 local function SetAutoSync(value)
     value = string.lower(value or "")
 
@@ -137,7 +141,7 @@ local function HandleSlashCommand(msg)
         StatusCommand()
     
     elseif command == "options" or command == "config" or command == "opt" or command == "conf" or command == ""  then
-        Print("Option command detected")
+        OpenOptions()
     else
         Print("Unknown command: " .. tostring(command))
         Print("Use /fgs help or /fgsync help")
