@@ -284,7 +284,7 @@ frame:SetScript("OnEvent", function(self, event, ...)
                 local targetMoney = (targetGold * 10000)
                 local differenceMoney = playerMoney - targetMoney
                 local bankMoney = C_Bank.FetchDepositedMoney(Enum.BankType.Account) or 0
-                Print("Curent gold: " .. FormatMoney(playerMoney))
+                Print("Current gold: " .. FormatMoney(playerMoney))
                 Print("Target gold: " .. FormatMoney(targetMoney))
                 if differenceMoney == 0 then
                     Print("Gold synced.")
