@@ -3,13 +3,23 @@ local addonName, addon = ...
 -- constants
 local PREFIX = "|cffA335EE[FGS]|r "
 local FULLNAME = "|cffA335EE[Furanku Gold Sync]|r "
+local CURRENT_DB_VERSION = 2
 
 -- defaults
 FGS_DB = FGS_DB or {}
 
 local defaults = {
-    targetGold = 50000,
-    autoSync = false,
+    dbVersion = CURRENT_DB_VERSION,
+    --targetGold = nil,
+    --autoSync = nil,
+    globalTargetGold = 50000,
+    globalAutoSync = true,
+    categories = {
+        main = { name = "Main", targetGold = 50000, autoSync = true, builtIn = true },
+        twink = { name = "Twink", targetGold = 30000, autoSync = true, builtIn = true },
+        inactive = { name = "Inactive", targetGold = 10000, autoSync = false, builtIn = true },
+    },
+    characters = {},
 }
 
 -- helper functions
@@ -45,29 +55,87 @@ local function FormatMoney(amount)
     end
 end
 
+local function GetCharacterKey()
+    return GetRealmName() .. "-" .. UnitName("player")
+end
+
+local function GetCurrentCategoryKey()
+    local charKey = GetCharacterKey()
+    local charData = FGS_DB.characters and FGS_DB.characters[charKey]
+    return charData and charData.category or nil
+end
+
+local function GetCurrentCategory()
+    local categoryKey = GetCurrentCategoryKey()
+    if not categoryKey then
+        return nil
+    end
+
+    return FGS_DB.categories and FGS_DB.categories[categoryKey]
+end
+
+
+local function GetCurrentTargetGold()
+    local charKey = GetCharacterKey()
+    local charData = FGS_DB.characters and FGS_DB.characters[charKey]
+
+    if charData and charData.targetGoldOverride ~= nil then
+        return charData.targetGoldOverride
+    end
+
+    local category = GetCurrentCategory()
+    if category and category.targetGold ~= nil then
+        return category.targetGold
+    end
+
+    return FGS_DB.globalTargetGold or 50000
+end
+
+local function IsAutoSyncEnabledForCurrentCharacter()
+    local charKey = GetCharacterKey()
+    local charData = FGS_DB.characters and FGS_DB.characters[charKey]
+
+    if charData and charData.autoSyncOverride ~= nil then
+        return charData.autoSyncOverride
+    end
+
+    local category = GetCurrentCategory()
+    if category and category.autoSync ~= nil then
+        return category.autoSync == true
+    end
+
+    return FGS_DB.globalAutoSync == true
+end
+
+
+
 -- command functions
 local function OpenOptions()
-    Settings.OpenToCategory(addon.optionsCategory.ID)
+    if addon.optionsCategory and addon.optionsCategory.ID then
+        Settings.OpenToCategory(addon.optionsCategory.ID)
+    else
+        Print("Options panel is not available.")
+    end
 end
 
 local function SetAutoSync(value)
     value = string.lower(value or "")
 
     if value == "" then
-        FGS_DB.autoSync = not (FGS_DB.autoSync == true)
+        FGS_DB.globalAutoSync = not (FGS_DB.globalAutoSync == true)
 
-        if FGS_DB.autoSync then
+        if IsAutoSyncEnabledForCurrentCharacter() then
             Print("Auto sync enabled")
         else
             Print("Auto sync disabled")
         end
 
     elseif value == "on" or value == "an" or value == "1" then
-        FGS_DB.autoSync = true
+        FGS_DB.globalAutoSync = true
         Print("Auto sync enabled")
 
     elseif value == "off" or value == "aus" or value == "0" then
-        FGS_DB.autoSync = false
+        FGS_DB.globalAutoSync = false
         Print("Auto sync disabled")
 
     else
@@ -87,18 +155,20 @@ local function SetTargetGold(value)
         return
     end
 
-    FGS_DB.targetGold = math.floor(amount)
-    Print("Target Gold set to: " .. tostring(FGS_DB.targetGold))
+    FGS_DB.globalTargetGold = math.floor(amount)
+    Print("Target Gold set to: " .. tostring(FGS_DB.globalTargetGold))
 end
 
 local function StatusCommand()
-    local targetGold = ("Target Gold is set to " .. tostring(FGS_DB.targetGold) .. " Gold") 
-    local sync = FGS_DB.autoSync and "Auto sync is enabled" or "Auto sync is disabled"
+    local targetGold = GetCurrentTargetGold()
+    local sync = IsAutoSyncEnabledForCurrentCharacter() and "Auto sync is enabled" or "Auto sync is disabled"
+    local categoryKey = GetCurrentCategoryKey()
 
     Print("Current Status:")
     Print(sync)
-    Print(targetGold)
-end    
+    Print("Target Gold is set to " .. tostring(targetGold) .. " Gold")
+    Print("Category: " .. tostring(categoryKey or "Global"))
+end 
 
 local function HelpCommand()
     Print("Commands:")
@@ -109,15 +179,190 @@ local function HelpCommand()
     
 end
 
+local function IsReservedCategoryKey(key)
+    return key == "global"
+end
+--categories
+local function ListCategories()
+    Print("Categories:")
 
+    for key, cat in pairs(FGS_DB.categories) do
+        Print("- " .. key .. " (" .. cat.name .. "): " .. cat.targetGold .. "g")
+    end
+end
 
--- apply defaults
-local function ApplyDefaults()
-    for key, value in pairs(defaults) do
-        if FGS_DB[key] == nil then
-            FGS_DB[key] = value
+local function SetCategory(categoryKey)
+    if categoryKey == "global" then
+        local charKey = GetCharacterKey()
+
+        if FGS_DB.characters[charKey] then
+            FGS_DB.characters[charKey].category = nil
+        end
+
+        Print("Category set to: Global")
+        return
+    end
+    
+    if not FGS_DB.categories[categoryKey] then
+        Print("Category not found: " .. tostring(categoryKey))
+        return
+    end
+
+    local charKey = GetCharacterKey()
+    FGS_DB.characters[charKey] = FGS_DB.characters[charKey] or {}
+
+    FGS_DB.characters[charKey].category = categoryKey
+
+    Print("Category set to: " .. categoryKey)
+end
+
+local function CreateCategory(key, gold)
+    if not key or key == "" then
+        Print("Invalid category key. Use: /fgs category create <key> <gold>")
+        return
+    end
+    if IsReservedCategoryKey(key) then
+        Print("'global' is reserved and cannot be used as a category name.")
+        return
+    end
+    if FGS_DB.categories[key] then
+        Print("Category already exists: " .. key)
+        return
+    end
+
+    local amount = tonumber(gold)
+    if not amount then
+        Print("Invalid gold value")
+        return
+    end
+
+    if not amount or amount < 0 then
+        Print("Invalid gold value")
+        return
+    end
+    
+    FGS_DB.categories[key] = {
+        name = key,
+        targetGold = math.floor(amount),
+        autoSync = true,
+        builtIn = false,
+    }
+
+    Print("Created category: " .. key .. " (" .. amount .. "g)")
+end
+
+local function SetCategoryTarget(categoryKey, value)
+    if not categoryKey or categoryKey == "" then
+        Print("Invalid category key. Use: /fgs category target <key> <gold>")
+        return
+    end
+
+    local category = FGS_DB.categories[categoryKey]
+
+    if not category then
+        Print("Category not found: " .. tostring(categoryKey))
+        return
+    end
+
+    local amount = tonumber(value)
+
+    if not amount or amount < 0 then
+        Print("Invalid gold value. Use: /fgs category target <key> <gold>")
+        return
+    end
+
+    category.targetGold = math.floor(amount)
+    Print("Target gold for category '" .. categoryKey .. "' set to " .. category.targetGold .. "g")
+end
+
+local function DeleteCategory(categoryKey)
+    if not categoryKey or categoryKey == "" then
+        Print("Invalid category key. Use: /fgs category delete <key>")
+        return
+    end
+
+    if categoryKey == "global" then
+        Print("'global' is not a category and cannot be deleted.")
+        return
+    end
+
+    local category = FGS_DB.categories[categoryKey]
+
+    if not category then
+        Print("Category not found: " .. tostring(categoryKey))
+        return
+    end
+
+    if category.builtIn then
+        Print("Built-in categories cannot be deleted.")
+        return
+    end
+
+    FGS_DB.categories[categoryKey] = nil
+
+    for _, charData in pairs(FGS_DB.characters) do
+        if charData.category == categoryKey then
+            charData.category = nil
         end
     end
+
+    Print("Deleted category: " .. categoryKey)
+end
+
+local function CategoryHelpCommand()
+    Print("Usage:")
+    Print("/fgs category list")
+    Print("/fgs category set <key>")
+    Print("/fgs category set global")
+    Print("/fgs category create <key> <gold>")
+    Print("/fgs category target <key> <gold>")
+    Print("/fgs category delete <key>")
+end 
+
+-- apply defaults
+local function MigrateDatabase()
+    FGS_DB = FGS_DB or {}
+
+    -- v1 -> v1.1
+    if not FGS_DB.dbVersion then
+        if FGS_DB.targetGold ~= nil and FGS_DB.globalTargetGold == nil then
+            FGS_DB.globalTargetGold = FGS_DB.targetGold
+        end
+
+        if FGS_DB.autoSync ~= nil and FGS_DB.globalAutoSync == nil then
+            FGS_DB.globalAutoSync = FGS_DB.autoSync
+        end
+
+        if FGS_DB.globalAutoSync == nil then
+            FGS_DB.globalAutoSync = true
+        end
+
+        FGS_DB.dbVersion = 2
+    end
+end
+
+local function DeepMergeDefaults(target, defaults)
+    for key, defaultValue in pairs(defaults) do
+        if target[key] == nil then
+            if type(defaultValue) == "table" then
+                target[key] = {}
+                DeepMergeDefaults(target[key], defaultValue)
+            else
+                target[key] = defaultValue
+            end
+        elseif type(target[key]) == "table" and type(defaultValue) == "table" then
+            DeepMergeDefaults(target[key], defaultValue)
+        end
+    end
+end
+
+local function ApplyDefaults()
+    FGS_DB = FGS_DB or {}
+
+    MigrateDatabase()
+    DeepMergeDefaults(FGS_DB, defaults)
+
+    FGS_DB.dbVersion = CURRENT_DB_VERSION
 end
 
 -- slash command handling
@@ -142,6 +387,25 @@ local function HandleSlashCommand(msg)
     
     elseif command == "options" or command == "config" or command == "opt" or command == "conf" or command == ""  then
         OpenOptions()
+
+    elseif command == "category" then
+        local sub, arg1, arg2 = rest:match("^(%S*)%s*(%S*)%s*(.-)$")
+
+        if sub == "list" then
+            ListCategories()
+
+        elseif sub == "set" then
+            SetCategory(arg1)
+
+        elseif sub == "create" then
+            CreateCategory(arg1, arg2)
+        elseif sub == "target" then
+            SetCategoryTarget(arg1, arg2)
+        elseif sub == "delete" then
+            DeleteCategory(arg1)
+        else
+            CategoryHelpCommand()
+        end
     else
         Print("Unknown command: " .. tostring(command))
         Print("Use /fgs help or /fgsync help")
@@ -174,14 +438,14 @@ frame:SetScript("OnEvent", function(self, event, ...)
         --Print("Interaction opened: " .. tostring(interactionType))
         if IsWarbandBankInteraction(interactionType) then
             --Print("Warband bank detected")
-            if FGS_DB.autoSync then
+            if IsAutoSyncEnabledForCurrentCharacter() then
                 --Print("Auto sync would run now")
                 local playerMoney = GetMoney()
-                local targetGold = FGS_DB.targetGold
+                local targetGold = GetCurrentTargetGold()
                 local targetMoney = (targetGold * 10000)
                 local differenceMoney = playerMoney - targetMoney
                 local bankMoney = C_Bank.FetchDepositedMoney(Enum.BankType.Account) or 0
-                Print("Curent gold: " .. FormatMoney(playerMoney))
+                Print("Current gold: " .. FormatMoney(playerMoney))
                 Print("Target gold: " .. FormatMoney(targetMoney))
                 if differenceMoney == 0 then
                     Print("Gold synced.")
