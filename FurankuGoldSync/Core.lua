@@ -111,7 +111,11 @@ end
 
 -- command functions
 local function OpenOptions()
-    Settings.OpenToCategory(addon.optionsCategory.ID)
+    if addon.optionsCategory and addon.optionsCategory.ID then
+        Settings.OpenToCategory(addon.optionsCategory.ID)
+    else
+        Print("Options panel is not available.")
+    end
 end
 
 local function SetAutoSync(value)
