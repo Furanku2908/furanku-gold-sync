@@ -2,7 +2,7 @@
 ## Title: Furanku Gold Sync
 ## Notes: Automatically balances your gold with the Warband Bank
 ## Author: Furanku2908
-## Version: 1.0.1-SNAPSHOT
+## Version: 1.1.0
 ## SavedVariables: FGS_DB
 ## IconTexture: Interface\AddOns\FurankuGoldSync\media\icon
 
