@@ -179,7 +179,101 @@ local function HelpCommand()
     
 end
 
+local function IsReservedCategoryKey(key)
+    return key == "global"
+end
+--categories
+local function ListCategories()
+    Print("Categories:")
 
+    for key, cat in pairs(FGS_DB.categories) do
+        Print("- " .. key .. " (" .. cat.name .. "): " .. cat.targetGold .. "g")
+    end
+end
+
+local function SetCategory(categoryKey)
+    if categoryKey == "global" then
+        local charKey = GetCharacterKey()
+
+        if FGS_DB.characters[charKey] then
+            FGS_DB.characters[charKey].category = nil
+        end
+
+        Print("Category set to: Global")
+        return
+    end
+    
+    if not FGS_DB.categories[categoryKey] then
+        Print("Category not found: " .. tostring(categoryKey))
+        return
+    end
+
+    local charKey = GetCharacterKey()
+    FGS_DB.characters[charKey] = FGS_DB.characters[charKey] or {}
+
+    FGS_DB.characters[charKey].category = categoryKey
+
+    Print("Category set to: " .. categoryKey)
+end
+
+local function CreateCategory(key, gold)
+    if not key or key == "" then
+        Print("Invalid category key. Use: /fgs category create <key> <gold>")
+        return
+    end
+    if FGS_DB.categories[key] then
+        Print("Category already exists: " .. key)
+        return
+    end
+
+    local amount = tonumber(gold)
+    if not amount then
+        Print("Invalid gold value")
+        return
+    end
+
+    FGS_DB.categories[key] = {
+        name = key,
+        targetGold = math.floor(amount),
+        autoSync = true,
+        builtIn = false,
+    }
+
+    Print("Created category: " .. key .. " (" .. amount .. "g)")
+end
+
+local function SetCategoryTarget(categoryKey, value)
+    if not categoryKey or categoryKey == "" then
+        Print("Invalid category key. Use: /fgs category target <key> <gold>")
+        return
+    end
+
+    local category = FGS_DB.categories[categoryKey]
+
+    if not category then
+        Print("Category not found: " .. tostring(categoryKey))
+        return
+    end
+
+    local amount = tonumber(value)
+
+    if not amount or amount < 0 then
+        Print("Invalid gold value. Use: /fgs category target <key> <gold>")
+        return
+    end
+
+    category.targetGold = math.floor(amount)
+    Print("Target gold for category '" .. categoryKey .. "' set to " .. category.targetGold .. "g")
+end
+
+local function CategoryHelpCommand()
+    Print("Usage:")
+    Print("/fgs category list")
+    Print("/fgs category set <key>")
+    Print("/fgs category set global")
+    Print("/fgs category create <key> <gold>")
+    Print("/fgs category target <key> <gold>")
+end 
 
 -- apply defaults
 local function MigrateDatabase()
@@ -249,6 +343,23 @@ local function HandleSlashCommand(msg)
     
     elseif command == "options" or command == "config" or command == "opt" or command == "conf" or command == ""  then
         OpenOptions()
+
+    elseif command == "category" then
+        local sub, arg1, arg2 = rest:match("^(%S*)%s*(%S*)%s*(.-)$")
+
+        if sub == "list" then
+            ListCategories()
+
+        elseif sub == "set" then
+            SetCategory(arg1)
+
+        elseif sub == "create" then
+            CreateCategory(arg1, arg2)
+        elseif sub == "target" then
+            SetCategoryTarget(arg1, arg2)
+        else
+            CategoryHelpCommand()
+        end
     else
         Print("Unknown command: " .. tostring(command))
         Print("Use /fgs help or /fgsync help")
