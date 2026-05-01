@@ -1,5 +1,7 @@
 # 💰 Furanku Gold Sync
 
+[![Download on CurseForge](https://img.shields.io/badge/CurseForge-Download-orange)](https://www.curseforge.com/wow/addons/furanku-gold-sync)
+
 Automatically keeps your character gold at a defined amount by syncing with the Warband Bank.
 
 ---
