@@ -221,6 +221,10 @@ local function CreateCategory(key, gold)
         Print("Invalid category key. Use: /fgs category create <key> <gold>")
         return
     end
+    if IsReservedCategoryKey(key) then
+        Print("'global' is reserved and cannot be used as a category name.")
+        return
+    end
     if FGS_DB.categories[key] then
         Print("Category already exists: " .. key)
         return
@@ -266,6 +270,40 @@ local function SetCategoryTarget(categoryKey, value)
     Print("Target gold for category '" .. categoryKey .. "' set to " .. category.targetGold .. "g")
 end
 
+local function DeleteCategory(categoryKey)
+    if not categoryKey or categoryKey == "" then
+        Print("Invalid category key. Use: /fgs category delete <key>")
+        return
+    end
+
+    if categoryKey == "global" then
+        Print("'global' is not a category and cannot be deleted.")
+        return
+    end
+
+    local category = FGS_DB.categories[categoryKey]
+
+    if not category then
+        Print("Category not found: " .. tostring(categoryKey))
+        return
+    end
+
+    if category.builtIn then
+        Print("Built-in categories cannot be deleted.")
+        return
+    end
+
+    FGS_DB.categories[categoryKey] = nil
+
+    for _, charData in pairs(FGS_DB.characters) do
+        if charData.category == categoryKey then
+            charData.category = nil
+        end
+    end
+
+    Print("Deleted category: " .. categoryKey)
+end
+
 local function CategoryHelpCommand()
     Print("Usage:")
     Print("/fgs category list")
@@ -273,6 +311,7 @@ local function CategoryHelpCommand()
     Print("/fgs category set global")
     Print("/fgs category create <key> <gold>")
     Print("/fgs category target <key> <gold>")
+    Print("/fgs category delete <key>")
 end 
 
 -- apply defaults
@@ -357,6 +396,8 @@ local function HandleSlashCommand(msg)
             CreateCategory(arg1, arg2)
         elseif sub == "target" then
             SetCategoryTarget(arg1, arg2)
+        elseif sub == "delete" then
+            DeleteCategory(arg1)
         else
             CategoryHelpCommand()
         end
