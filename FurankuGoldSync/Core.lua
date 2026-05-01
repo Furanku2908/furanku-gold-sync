@@ -236,6 +236,11 @@ local function CreateCategory(key, gold)
         return
     end
 
+    if not amount or amount < 0 then
+        Print("Invalid gold value")
+        return
+    end
+    
     FGS_DB.categories[key] = {
         name = key,
         targetGold = math.floor(amount),
