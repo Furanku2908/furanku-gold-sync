@@ -14,6 +14,7 @@ local defaults = {
     --autoSync = nil,
     globalTargetGold = 50000,
     globalAutoSync = true,
+    language = nil, -- will default to GetLocale()
     categories = {
         main = { name = "Main", targetGold = 50000, autoSync = true, builtIn = true },
         twink = { name = "Twink", targetGold = 30000, autoSync = true, builtIn = true },
@@ -114,7 +115,7 @@ local function OpenOptions()
     if addon.optionsCategory and addon.optionsCategory.ID then
         Settings.OpenToCategory(addon.optionsCategory.ID)
     else
-        Print("Options panel is not available.")
+        Print(FGS_GetLocalizedString("OPTIONS_NOT_AVAILABLE"))
     end
 end
 
@@ -125,57 +126,57 @@ local function SetAutoSync(value)
         FGS_DB.globalAutoSync = not (FGS_DB.globalAutoSync == true)
 
         if IsAutoSyncEnabledForCurrentCharacter() then
-            Print("Auto sync enabled")
+            Print(FGS_GetLocalizedString("AUTO_SYNC_ENABLED"))
         else
-            Print("Auto sync disabled")
+            Print(FGS_GetLocalizedString("AUTO_SYNC_DISABLED"))
         end
 
     elseif value == "on" or value == "an" or value == "1" then
         FGS_DB.globalAutoSync = true
-        Print("Auto sync enabled")
+        Print(FGS_GetLocalizedString("AUTO_SYNC_ENABLED"))
 
     elseif value == "off" or value == "aus" or value == "0" then
         FGS_DB.globalAutoSync = false
-        Print("Auto sync disabled")
+        Print(FGS_GetLocalizedString("AUTO_SYNC_DISABLED"))
 
     else
-        Print("Unknown value for auto sync: " .. tostring(value))
+        Print(FGS_GetLocalizedString("UNKNOWN_VALUE_AUTO_SYNC", value))
     end
 end
 
 local function SetTargetGold(value)
     local amount = tonumber(value)
     if amount == nil then
-        Print("Invalid gold amount. Use e.g.: /fgs set 50000")
+        Print(FGS_GetLocalizedString("INVALID_GOLD_AMOUNT"))
         return
     end
 
     if amount < 0 then
-        Print("Gold amount cannot be negative.")
+        Print(FGS_GetLocalizedString("GOLD_CANNOT_NEGATIVE"))
         return
     end
 
     FGS_DB.globalTargetGold = math.floor(amount)
-    Print("Target Gold set to: " .. tostring(FGS_DB.globalTargetGold))
+    Print(FGS_GetLocalizedString("TARGET_GOLD_SET", tostring(FGS_DB.globalTargetGold)))
 end
 
 local function StatusCommand()
     local targetGold = GetCurrentTargetGold()
-    local sync = IsAutoSyncEnabledForCurrentCharacter() and "Auto sync is enabled" or "Auto sync is disabled"
+    local sync = IsAutoSyncEnabledForCurrentCharacter() and FGS_GetLocalizedString("AUTO_SYNC_ENABLED") or FGS_GetLocalizedString("AUTO_SYNC_DISABLED_STATUS")
     local categoryKey = GetCurrentCategoryKey()
 
-    Print("Current Status:")
+    Print(FGS_GetLocalizedString("CURRENT_STATUS"))
     Print(sync)
-    Print("Target Gold is set to " .. tostring(targetGold) .. " Gold")
-    Print("Category: " .. tostring(categoryKey or "Global"))
+    Print(FGS_GetLocalizedString("TARGET_GOLD_STATUS", tostring(targetGold)))
+    Print(FGS_GetLocalizedString("CATEGORY_STATUS", tostring(categoryKey or "Global")))
 end 
 
 local function HelpCommand()
-    Print("Commands:")
-    Print("/fgs or /fgsync for Options")
-    Print("/fgs set <gold> to set target gold amount")
-    Print("/fgs auto [on|off] to toggle auto sync")
-    Print("/fgs status to see current settings")
+    Print(FGS_GetLocalizedString("COMMANDS"))
+    Print(FGS_GetLocalizedString("CMD_OPTIONS"))
+    Print(FGS_GetLocalizedString("CMD_SET"))
+    Print(FGS_GetLocalizedString("CMD_AUTO"))
+    Print(FGS_GetLocalizedString("CMD_STATUS"))
     
 end
 
@@ -184,10 +185,10 @@ local function IsReservedCategoryKey(key)
 end
 --categories
 local function ListCategories()
-    Print("Categories:")
+    Print(FGS_GetLocalizedString("CATEGORIES"))
 
     for key, cat in pairs(FGS_DB.categories) do
-        Print("- " .. key .. " (" .. cat.name .. "): " .. cat.targetGold .. "g")
+        Print(FGS_GetLocalizedString("CATEGORY_LIST_ITEM", key, cat.name, cat.targetGold))
     end
 end
 
@@ -199,12 +200,12 @@ local function SetCategory(categoryKey)
             FGS_DB.characters[charKey].category = nil
         end
 
-        Print("Category set to: Global")
+        Print(FGS_GetLocalizedString("CATEGORY_SET_GLOBAL"))
         return
     end
     
     if not FGS_DB.categories[categoryKey] then
-        Print("Category not found: " .. tostring(categoryKey))
+        Print(FGS_GetLocalizedString("CATEGORY_NOT_FOUND", categoryKey))
         return
     end
 
@@ -213,31 +214,31 @@ local function SetCategory(categoryKey)
 
     FGS_DB.characters[charKey].category = categoryKey
 
-    Print("Category set to: " .. categoryKey)
+    Print(FGS_GetLocalizedString("CATEGORY_SET_TO", categoryKey))
 end
 
 local function CreateCategory(key, gold)
     if not key or key == "" then
-        Print("Invalid category key. Use: /fgs category create <key> <gold>")
+        Print(FGS_GetLocalizedString("INVALID_CATEGORY_KEY"))
         return
     end
     if IsReservedCategoryKey(key) then
-        Print("'global' is reserved and cannot be used as a category name.")
+        Print(FGS_GetLocalizedString("GLOBAL_RESERVED"))
         return
     end
     if FGS_DB.categories[key] then
-        Print("Category already exists: " .. key)
+        Print(FGS_GetLocalizedString("CATEGORY_EXISTS", key))
         return
     end
 
     local amount = tonumber(gold)
     if not amount then
-        Print("Invalid gold value")
+        Print(FGS_GetLocalizedString("INVALID_GOLD_VALUE"))
         return
     end
 
     if not amount or amount < 0 then
-        Print("Invalid gold value")
+        Print(FGS_GetLocalizedString("INVALID_GOLD_VALUE"))
         return
     end
     
@@ -248,53 +249,53 @@ local function CreateCategory(key, gold)
         builtIn = false,
     }
 
-    Print("Created category: " .. key .. " (" .. amount .. "g)")
+    Print(FGS_GetLocalizedString("CREATED_CATEGORY", key, amount))
 end
 
 local function SetCategoryTarget(categoryKey, value)
     if not categoryKey or categoryKey == "" then
-        Print("Invalid category key. Use: /fgs category target <key> <gold>")
+        Print(FGS_GetLocalizedString("INVALID_CATEGORY_KEY_TARGET"))
         return
     end
 
     local category = FGS_DB.categories[categoryKey]
 
     if not category then
-        Print("Category not found: " .. tostring(categoryKey))
+        Print(FGS_GetLocalizedString("CATEGORY_NOT_FOUND", categoryKey))
         return
     end
 
     local amount = tonumber(value)
 
     if not amount or amount < 0 then
-        Print("Invalid gold value. Use: /fgs category target <key> <gold>")
+        Print(FGS_GetLocalizedString("INVALID_GOLD_VALUE"))
         return
     end
 
     category.targetGold = math.floor(amount)
-    Print("Target gold for category '" .. categoryKey .. "' set to " .. category.targetGold .. "g")
+    Print(FGS_GetLocalizedString("TARGET_GOLD_CATEGORY_SET", categoryKey, category.targetGold))
 end
 
 local function DeleteCategory(categoryKey)
     if not categoryKey or categoryKey == "" then
-        Print("Invalid category key. Use: /fgs category delete <key>")
+        Print(FGS_GetLocalizedString("INVALID_CATEGORY_KEY_DELETE"))
         return
     end
 
     if categoryKey == "global" then
-        Print("'global' is not a category and cannot be deleted.")
+        Print(FGS_GetLocalizedString("GLOBAL_NOT_CATEGORY"))
         return
     end
 
     local category = FGS_DB.categories[categoryKey]
 
     if not category then
-        Print("Category not found: " .. tostring(categoryKey))
+        Print(FGS_GetLocalizedString("CATEGORY_NOT_FOUND", categoryKey))
         return
     end
 
     if category.builtIn then
-        Print("Built-in categories cannot be deleted.")
+        Print(FGS_GetLocalizedString("BUILT_IN_CANNOT_DELETE"))
         return
     end
 
@@ -306,17 +307,17 @@ local function DeleteCategory(categoryKey)
         end
     end
 
-    Print("Deleted category: " .. categoryKey)
+    Print(FGS_GetLocalizedString("DELETED_CATEGORY", categoryKey))
 end
 
 local function CategoryHelpCommand()
-    Print("Usage:")
-    Print("/fgs category list")
-    Print("/fgs category set <key>")
-    Print("/fgs category set global")
-    Print("/fgs category create <key> <gold>")
-    Print("/fgs category target <key> <gold>")
-    Print("/fgs category delete <key>")
+    Print(FGS_GetLocalizedString("CATEGORY_USAGE"))
+    Print(FGS_GetLocalizedString("CMD_CATEGORY_LIST"))
+    Print(FGS_GetLocalizedString("CMD_CATEGORY_SET"))
+    Print(FGS_GetLocalizedString("CMD_CATEGORY_SET_GLOBAL"))
+    Print(FGS_GetLocalizedString("CMD_CATEGORY_CREATE"))
+    Print(FGS_GetLocalizedString("CMD_CATEGORY_TARGET"))
+    Print(FGS_GetLocalizedString("CMD_CATEGORY_DELETE"))
 end 
 
 -- apply defaults
@@ -407,8 +408,8 @@ local function HandleSlashCommand(msg)
             CategoryHelpCommand()
         end
     else
-        Print("Unknown command: " .. tostring(command))
-        Print("Use /fgs help or /fgsync help")
+        Print(FGS_GetLocalizedString("UNKNOWN_COMMAND", command))
+        Print(FGS_GetLocalizedString("USE_HELP"))
     end
 end
 
@@ -421,7 +422,7 @@ local function OnLogin()
     SlashCmdList["FURANKUGOLDSYNC"] = HandleSlashCommand
     ApplyDefaults()
     local ICON = "|TInterface\\AddOns\\FurankuGoldSync\\media\\icon:16:16|t "
-    NamePrint(ICON .. "Loaded!")
+    NamePrint(ICON .. FGS_GetLocalizedString("LOADED"))
 end
 
 -- event registration
@@ -445,30 +446,30 @@ frame:SetScript("OnEvent", function(self, event, ...)
                 local targetMoney = (targetGold * 10000)
                 local differenceMoney = playerMoney - targetMoney
                 local bankMoney = C_Bank.FetchDepositedMoney(Enum.BankType.Account) or 0
-                Print("Current gold: " .. FormatMoney(playerMoney))
-                Print("Target gold: " .. FormatMoney(targetMoney))
+                Print(FGS_GetLocalizedString("CURRENT_GOLD", FormatMoney(playerMoney)))
+                Print(FGS_GetLocalizedString("TARGET_GOLD", FormatMoney(targetMoney)))
                 if differenceMoney == 0 then
-                    Print("Gold synced.")
+                    Print(FGS_GetLocalizedString("GOLD_SYNCED"))
                 elseif differenceMoney < 0 then
-                    Print("Missing: " .. FormatMoney(-differenceMoney))
+                    Print(FGS_GetLocalizedString("MISSING", FormatMoney(-differenceMoney)))
                     if bankMoney == 0 then
-                        Print("Warbank has no gold to withdraw.") 
+                        Print(FGS_GetLocalizedString("WARBANK_NO_GOLD")) 
                     elseif bankMoney < -differenceMoney then
                         
-                        Print("Not enough gold in Warband Bank. Withdrawing remaining: " .. FormatMoney(bankMoney) )
+                        Print(FGS_GetLocalizedString("NOT_ENOUGH_GOLD_WARBANK", FormatMoney(bankMoney)))
                         C_Bank.WithdrawMoney(Enum.BankType.Account, bankMoney)
                     else
-                        Print("Withdrawing missing gold")
+                        Print(FGS_GetLocalizedString("WITHDRAWING_MISSING"))
                         C_Bank.WithdrawMoney(Enum.BankType.Account, -differenceMoney)
                     end
                 else
-                    Print("Excess: " .. FormatMoney(differenceMoney))
-                    Print("Depositing excess gold.")
+                    Print(FGS_GetLocalizedString("EXCESS", FormatMoney(differenceMoney)))
+                    Print(FGS_GetLocalizedString("DEPOSITING_EXCESS"))
                     C_Bank.DepositMoney(Enum.BankType.Account, differenceMoney)
                 end
 
             else
-                 Print("Auto sync is disabled")
+                 Print(FGS_GetLocalizedString("AUTO_SYNC_DISABLED_STATUS"))
             end
         end
     end

@@ -6,5 +6,6 @@
 ## SavedVariables: FGS_DB
 ## IconTexture: Interface\AddOns\FurankuGoldSync\media\icon
 
+Localization.lua
 Core.lua
 Options.lua
