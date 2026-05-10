@@ -19,6 +19,8 @@ Automatically keeps your character gold at a defined amount by syncing with the 
 - ⚙️ In-game configuration via Options Panel
 - 🗂 Unlimited custom categories
 - 🔒 Built-in categories (Main, Twink, Inactive) are protected
+- 🌍 Multi-language support (English / Deutsch)
+- ⌛ Smart combat handling - Options open automatically after combat ends
 
 ---
 
@@ -106,6 +108,20 @@ World of Warcraft/_retail_/Interface/AddOns/
 
 ---
 
+## 🌍 Localization
+
+The addon automatically detects your game client language (English or German).
+
+Change language in the Options Panel:
+
+```text
+/fgs
+```
+
+Then select your preferred language from the "Language:" dropdown.
+
+---
+
 ## 🔧 Development
 
 ### Structure
@@ -114,6 +130,7 @@ World of Warcraft/_retail_/Interface/AddOns/
 FurankuGoldSync/
 ├── Core.lua
 ├── Options.lua
+├── Localization.lua
 ├── FurankuGoldSync.toc
 └── media/
 ```
@@ -123,14 +140,15 @@ FurankuGoldSync/
 - Uses SavedVariables: `FGS_DB`
 - Categories are account-wide
 - Character assignments are per-character
+- Options panel cannot be opened during combat, but will automatically open when combat ends
 
 ---
 
 ## 🔮 Roadmap
 
-- 🌍 Multi-language support (EN/DE)
-- 👤 Per-character overrides for target gold and auto sync
-- 🧩 Advanced options panel
+- ✅ Multi-language support (EN/DE) - **Implemented in v1.1.0**
+- ✅ Per-character overrides for target gold and auto sync - **Implemented**
+- ✅ Advanced options panel - **Implemented**
 - 🎯 More fine-grained sync control
 
 ---
