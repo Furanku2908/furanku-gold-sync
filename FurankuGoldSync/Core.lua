@@ -8,6 +8,9 @@ local PREFIX = "|cffA335EE[FGS]|r "                -- Prefix for addon messages
 local FULLNAME = "|cffA335EE[Furanku Gold Sync]|r" -- Full name prefix
 local CURRENT_DB_VERSION = 2                       -- Current database schema version
 
+-- Pending options flag: Stores whether options should be opened when combat ends
+local pendingOpenOptions = false
+
 -- ============================================================================
 -- SAVED VARIABLES & DEFAULTS
 -- ============================================================================
@@ -157,6 +160,12 @@ end
 -- OpenOptions(): Open the addon settings panel
 -- Called when user runs: /fgs, /fgs options, /fgs config, etc.
 local function OpenOptions()
+    if InCombatLockdown() then
+        Print(FGS_GetLocalizedString("CANNOT_OPEN_OPTIONS_IN_COMBAT"))
+        pendingOpenOptions = true
+        return
+    end
+    
     if addon.optionsCategory and addon.optionsCategory.ID then
         Settings.OpenToCategory(addon.optionsCategory.ID)
     else
@@ -491,10 +500,20 @@ end
 local frame = CreateFrame("Frame")
 frame:RegisterEvent("PLAYER_LOGIN")
 frame:RegisterEvent("PLAYER_INTERACTION_MANAGER_FRAME_SHOW")
+frame:RegisterEvent("PLAYER_REGEN_ENABLED")
 
 frame:SetScript("OnEvent", function(self, event, ...)
     if event == "PLAYER_LOGIN" then
         OnLogin()
+
+    elseif event == "PLAYER_REGEN_ENABLED" then
+        if pendingOpenOptions then
+            pendingOpenOptions = false
+            Print(FGS_GetLocalizedString("OPTIONS_OPENING_AFTER_COMBAT"))
+            if addon.optionsCategory and addon.optionsCategory.ID then
+                Settings.OpenToCategory(addon.optionsCategory.ID)
+            end
+        end
 
     elseif event == "PLAYER_INTERACTION_MANAGER_FRAME_SHOW" then
         local interactionType = ...
