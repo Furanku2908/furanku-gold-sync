@@ -1,8 +1,23 @@
--- Localization.lua
--- Localization table for Furanku Gold Sync
+-- ============================================================================
+-- Localization.lua - Furanku Gold Sync
+-- ============================================================================
+-- This file contains all localized strings for the addon in multiple languages.
+-- 
+-- Structure:
+--   FGS_L[language][key] = value
+--   - FGS_L.enUS: English localized strings
+--   - FGS_L.deDE: German (Deutsch) localized strings
+--
+-- Usage:
+--   Access localized strings via: FGS_GetLocalizedString(key, ...)
+--   This function is defined in Localization.lua and handles:
+--   - Language selection (uses client locale by default, overridable in DB)
+--   - String formatting with variable arguments (e.g., "%s", "%d")
+-- ============================================================================
 
 local addonName, addon = ...
 
+-- Global localization table: accessible throughout the addon
 FGS_L = {
     enUS = {
         AUTO_SYNC_ENABLED = "Auto sync enabled",
@@ -150,9 +165,35 @@ FGS_L = {
     },
 }
 
+-- ============================================================================
+-- FGS_GetLocalizedString(key, ...)
+-- ============================================================================
+-- Retrieves a localized string from the FGS_L table with optional formatting.
+--
+-- Parameters:
+--   key (string): The localization key to look up (e.g., "AUTO_SYNC_ENABLED")
+--   ...: Optional arguments for string formatting (supports standard Lua string.format)
+--
+-- Returns:
+--   string: The localized string, formatted with any provided arguments.
+--           If the key doesn't exist, returns the key itself as fallback.
+--
+-- Behavior:
+--   - Respects FGS_DB.language override if set by the user in Options
+--   - Falls back to client locale (GetLocale()) if no override is set
+--   - Falls back to English (enUS) if the selected language is unavailable
+--   - Supports format strings like "Hello %s, you have %dg"
+-- ============================================================================
 function FGS_GetLocalizedString(key, ...)
-    local locale = FGS_DB.language or GetLocale()
+    -- Get the language preference: user override (FGS_DB.language) or client locale
+    local locale = FGS_DB and FGS_DB.language or GetLocale()
+
+    -- Get string table for the selected language, fall back to English
     local strings = FGS_L[locale] or FGS_L.enUS
+
+    -- Get the localized string, fall back to English key, then the key itself
     local str = strings[key] or FGS_L.enUS[key] or key
+
+    -- Return formatted string (handles both with and without arguments)
     return string.format(str, ...)
 end

@@ -1,41 +1,63 @@
 local addonName, addon = ...
 
--- constants
-local PREFIX = "|cffA335EE[FGS]|r "
-local FULLNAME = "|cffA335EE[Furanku Gold Sync]|r "
-local CURRENT_DB_VERSION = 2
+-- ============================================================================
+-- ADDON METADATA & CONSTANTS
+-- ============================================================================
+-- Chat message prefixes for console output
+local PREFIX = "|cffA335EE[FGS]|r "                -- Prefix for addon messages
+local FULLNAME = "|cffA335EE[Furanku Gold Sync]|r" -- Full name prefix
+local CURRENT_DB_VERSION = 2                       -- Current database schema version
 
--- defaults
+-- ============================================================================
+-- SAVED VARIABLES & DEFAULTS
+-- ============================================================================
+-- FGS_DB: Persistent SavedVariables table (stored per character/realm)
 FGS_DB = FGS_DB or {}
 
+-- Default database structure that gets merged with existing SavedVariables
 local defaults = {
-    dbVersion = CURRENT_DB_VERSION,
-    --targetGold = nil,
-    --autoSync = nil,
-    globalTargetGold = 50000,
-    globalAutoSync = true,
-    language = nil, -- will default to GetLocale()
+    dbVersion = CURRENT_DB_VERSION,                 -- Version for migration support
+    globalTargetGold = 50000,                       -- Default gold target amount
+    globalAutoSync = true,                          -- Auto-sync enabled by default
+    language = nil,                                 -- nil = use client locale, can be overridden
+    -- Built-in categories: Main, Twink, and Inactive with preset gold targets
     categories = {
         main = { name = "Main", targetGold = 50000, autoSync = true, builtIn = true },
         twink = { name = "Twink", targetGold = 30000, autoSync = true, builtIn = true },
         inactive = { name = "Inactive", targetGold = 10000, autoSync = false, builtIn = true },
     },
-    characters = {},
+    characters = {},  -- Character-specific settings: maps "realm-name" -> {category, autoSyncOverride, etc}
 }
 
--- helper functions
+-- ============================================================================
+-- HELPER FUNCTIONS - Output Formatting
+-- ============================================================================
+-- Print(msg): Print a message with addon prefix
+-- Outputs formatted messages to chat with the addon prefix
 local function Print(msg)
     print(PREFIX .. tostring(msg))
 end
 
+-- NamePrint(msg): Print a message with full addon name prefix
+-- Used for important messages like addon loaded notification
 local function NamePrint(msg)
     print(FULLNAME .. tostring(msg))
 end
 
+-- ============================================================================
+-- HELPER FUNCTIONS - Game Interaction Detection & Money Formatting
+-- ============================================================================
+-- IsWarbandBankInteraction(interactionType): Detect Warband Bank interactions
+-- Warband Bank can be accessed via:
+--   - Type 8: Direct Warband Bank frame
+--   - Type 68: Bank frame with Warband option
 local function IsWarbandBankInteraction(interactionType)
     return interactionType == 8 or interactionType == 68
 end
 
+-- MoneyConverter(amount): Convert money in copper to gold, silver, copper
+-- WoW stores money as total copper (1 gold = 10000 copper, 1 silver = 100 copper)
+-- Returns: gold, silver, copper (e.g., 123456 copper -> 12g, 34s, 56c)
 local function MoneyConverter (amount)
     local gold = math.floor(amount / 10000)
     local silver = math.floor((amount % 10000) /100)
@@ -44,6 +66,8 @@ local function MoneyConverter (amount)
     return gold, silver, copper
 end
 
+-- FormatMoney(amount): Convert copper amount to human-readable gold string
+-- Examples: 123456 -> "12g 34s 56c", 500000 -> "50g"
 local function FormatMoney(amount)
     local g, s, c = MoneyConverter(amount)
 
@@ -56,16 +80,26 @@ local function FormatMoney(amount)
     end
 end
 
+-- ============================================================================
+-- HELPER FUNCTIONS - Character & Category Lookup
+-- ============================================================================
+-- GetCharacterKey(): Generate a unique identifier for the current character
+-- Format: "RealmName-CharacterName" (e.g., "Area 52-Herold")
+-- Used to store per-character settings in FGS_DB.characters
 local function GetCharacterKey()
     return GetRealmName() .. "-" .. UnitName("player")
 end
 
+-- GetCurrentCategoryKey(): Get the category assigned to the current character
+-- Returns: the category key (string) or nil if character uses global settings
 local function GetCurrentCategoryKey()
     local charKey = GetCharacterKey()
     local charData = FGS_DB.characters and FGS_DB.characters[charKey]
     return charData and charData.category or nil
 end
 
+-- GetCurrentCategory(): Fetch the full category table for the current character
+-- Returns: table with {name, targetGold, autoSync, builtIn} or nil
 local function GetCurrentCategory()
     local categoryKey = GetCurrentCategoryKey()
     if not categoryKey then
@@ -76,6 +110,11 @@ local function GetCurrentCategory()
 end
 
 
+-- ============================================================================
+-- HELPER FUNCTIONS - Settings Lookup & Resolution
+-- ============================================================================
+-- GetCurrentTargetGold(): Resolve the target gold amount with proper precedence
+-- Priority: Character Override > Category Setting > Global Setting > Default (50000)
 local function GetCurrentTargetGold()
     local charKey = GetCharacterKey()
     local charData = FGS_DB.characters and FGS_DB.characters[charKey]
@@ -92,6 +131,8 @@ local function GetCurrentTargetGold()
     return FGS_DB.globalTargetGold or 50000
 end
 
+-- IsAutoSyncEnabledForCurrentCharacter(): Resolve whether auto-sync is enabled
+-- Priority: Character Override > Category Setting > Global Setting > Default (true)
 local function IsAutoSyncEnabledForCurrentCharacter()
     local charKey = GetCharacterKey()
     local charData = FGS_DB.characters and FGS_DB.characters[charKey]
@@ -110,7 +151,11 @@ end
 
 
 
--- command functions
+-- ============================================================================
+-- COMMAND FUNCTIONS - User Interface Commands
+-- ============================================================================
+-- OpenOptions(): Open the addon settings panel
+-- Called when user runs: /fgs, /fgs options, /fgs config, etc.
 local function OpenOptions()
     if addon.optionsCategory and addon.optionsCategory.ID then
         Settings.OpenToCategory(addon.optionsCategory.ID)
@@ -119,6 +164,8 @@ local function OpenOptions()
     end
 end
 
+-- SetAutoSync(value): Toggle or set auto-sync globally
+-- Parameters: "" (toggle), "on"/"an"/"1" (enable), "off"/"aus"/"0" (disable)
 local function SetAutoSync(value)
     value = string.lower(value or "")
 
@@ -171,19 +218,22 @@ local function StatusCommand()
     Print(FGS_GetLocalizedString("CATEGORY_STATUS", tostring(categoryKey or "Global")))
 end 
 
+-- HelpCommand(): Display available slash commands to the user
 local function HelpCommand()
     Print(FGS_GetLocalizedString("COMMANDS"))
     Print(FGS_GetLocalizedString("CMD_OPTIONS"))
     Print(FGS_GetLocalizedString("CMD_SET"))
     Print(FGS_GetLocalizedString("CMD_AUTO"))
     Print(FGS_GetLocalizedString("CMD_STATUS"))
-    
 end
 
+-- IsReservedCategoryKey(key): Check whether a category key is reserved and not allowed for custom categories
 local function IsReservedCategoryKey(key)
     return key == "global"
 end
---categories
+-- ============================================================================
+-- CATEGORY MANAGEMENT FUNCTIONS
+-- ============================================================================
 local function ListCategories()
     Print(FGS_GetLocalizedString("CATEGORIES"))
 
@@ -318,22 +368,29 @@ local function CategoryHelpCommand()
     Print(FGS_GetLocalizedString("CMD_CATEGORY_CREATE"))
     Print(FGS_GetLocalizedString("CMD_CATEGORY_TARGET"))
     Print(FGS_GetLocalizedString("CMD_CATEGORY_DELETE"))
-end 
+end
 
--- apply defaults
+-- ============================================================================
+-- DATABASE MANAGEMENT - Initialization, Defaults & Migration
+-- ============================================================================
+-- MigrateDatabase(): Handle version upgrades and legacy data migration
+-- v1 -> v2: Migrates old targetGold/autoSync fields to global versions
 local function MigrateDatabase()
     FGS_DB = FGS_DB or {}
 
-    -- v1 -> v1.1
+    -- v1 -> v2: Migrate legacy fields
     if not FGS_DB.dbVersion then
+        -- Migrate targetGold to globalTargetGold
         if FGS_DB.targetGold ~= nil and FGS_DB.globalTargetGold == nil then
             FGS_DB.globalTargetGold = FGS_DB.targetGold
         end
 
+        -- Migrate autoSync to globalAutoSync
         if FGS_DB.autoSync ~= nil and FGS_DB.globalAutoSync == nil then
             FGS_DB.globalAutoSync = FGS_DB.autoSync
         end
 
+        -- Set default auto-sync if not set
         if FGS_DB.globalAutoSync == nil then
             FGS_DB.globalAutoSync = true
         end
@@ -342,6 +399,9 @@ local function MigrateDatabase()
     end
 end
 
+-- DeepMergeDefaults(target, defaults): Recursively merge default values into target table
+-- Only fills in missing keys; does not overwrite existing values
+-- Handles nested tables (like categories)
 local function DeepMergeDefaults(target, defaults)
     for key, defaultValue in pairs(defaults) do
         if target[key] == nil then
@@ -357,6 +417,8 @@ local function DeepMergeDefaults(target, defaults)
     end
 end
 
+-- ApplyDefaults(): Initialize or update the database with default values
+-- Called at addon load to ensure all required fields exist in FGS_DB
 local function ApplyDefaults()
     FGS_DB = FGS_DB or {}
 

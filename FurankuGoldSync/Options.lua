@@ -1,17 +1,22 @@
 local addonName, addon = ...
 
+-- ============================================================================
+-- OPTIONS PANEL - Frame Setup
+-- ============================================================================
+-- Create the options panel and set the localized title
 local panel = CreateFrame("Frame")
 panel.name = FGS_GetLocalizedString("PANEL_TITLE")
 
--- =========================
+-- ============================================================================
 -- Helpers
--- =========================
-
+-- ============================================================================
+-- Print(msg): Simple output helper with addon prefix for the options module
 local function Print(msg)
     print("|cffA335EE[FGS]|r " .. tostring(msg))
 end
 
 local function EnsureDB()
+    -- Ensure a minimal saved database structure exists for the options panel
     FGS_DB = FGS_DB or {}
     FGS_DB.globalTargetGold = FGS_DB.globalTargetGold or 50000
 
@@ -24,6 +29,7 @@ local function EnsureDB()
 end
 
 local function GetCharacterKey()
+    -- Returns a unique key for the current character, used for per-character settings
     return GetRealmName() .. "-" .. UnitName("player")
 end
 
@@ -37,6 +43,7 @@ local function GetCurrentCategoryKey()
 end
 
 local function GetCurrentCategory()
+    -- Returns the current category object for the player or nil for global mode
     local categoryKey = GetCurrentCategoryKey()
 
     if not categoryKey then
@@ -47,6 +54,7 @@ local function GetCurrentCategory()
 end
 
 local function GetCurrentTargetGold()
+    -- Resolve current target gold using category or global fallback
     EnsureDB()
 
     local category = GetCurrentCategory()
@@ -59,6 +67,7 @@ local function GetCurrentTargetGold()
 end
 
 local function IsCurrentAutoSyncEnabled()
+    -- Resolve current auto-sync status using category or global fallback
     EnsureDB()
 
     local category = GetCurrentCategory()
@@ -71,6 +80,7 @@ local function IsCurrentAutoSyncEnabled()
 end
 
 local function SetCurrentCategory(categoryKey)
+    -- Assign a category to the current character or reset to global if "global" is selected
     EnsureDB()
 
     local charKey = GetCharacterKey()
@@ -96,10 +106,12 @@ local function SetCurrentCategory(categoryKey)
 end
 
 local function IsReservedCategoryKey(key)
+    -- Prevent using the reserved keyword "global" for custom categories
     return key == "global"
 end
 
 local function CreateCategory(key, gold)
+    -- Create a new custom category with a normalized key and target gold value
     EnsureDB()
 
     key = string.lower(key or "")
@@ -139,6 +151,7 @@ local function CreateCategory(key, gold)
 end
 
 local function DeleteCategory(categoryKey)
+    -- Delete a custom category and clear it from any characters using it
     EnsureDB()
 
     if not categoryKey or categoryKey == "" then
