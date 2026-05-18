@@ -1,17 +1,22 @@
 local addonName, addon = ...
 
+-- ============================================================================
+-- OPTIONS PANEL - Frame Setup
+-- ============================================================================
+-- Create the options panel and set the localized title
 local panel = CreateFrame("Frame")
-panel.name = "Furanku Gold Sync"
+panel.name = FGS_GetLocalizedString("PANEL_TITLE")
 
--- =========================
+-- ============================================================================
 -- Helpers
--- =========================
-
+-- ============================================================================
+-- Print(msg): Simple output helper with addon prefix for the options module
 local function Print(msg)
     print("|cffA335EE[FGS]|r " .. tostring(msg))
 end
 
 local function EnsureDB()
+    -- Ensure a minimal saved database structure exists for the options panel
     FGS_DB = FGS_DB or {}
     FGS_DB.globalTargetGold = FGS_DB.globalTargetGold or 50000
 
@@ -24,6 +29,7 @@ local function EnsureDB()
 end
 
 local function GetCharacterKey()
+    -- Returns a unique key for the current character, used for per-character settings
     return GetRealmName() .. "-" .. UnitName("player")
 end
 
@@ -37,6 +43,7 @@ local function GetCurrentCategoryKey()
 end
 
 local function GetCurrentCategory()
+    -- Returns the current category object for the player or nil for global mode
     local categoryKey = GetCurrentCategoryKey()
 
     if not categoryKey then
@@ -47,6 +54,7 @@ local function GetCurrentCategory()
 end
 
 local function GetCurrentTargetGold()
+    -- Resolve current target gold using category or global fallback
     EnsureDB()
 
     local category = GetCurrentCategory()
@@ -59,6 +67,7 @@ local function GetCurrentTargetGold()
 end
 
 local function IsCurrentAutoSyncEnabled()
+    -- Resolve current auto-sync status using category or global fallback
     EnsureDB()
 
     local category = GetCurrentCategory()
@@ -71,6 +80,7 @@ local function IsCurrentAutoSyncEnabled()
 end
 
 local function SetCurrentCategory(categoryKey)
+    -- Assign a category to the current character or reset to global if "global" is selected
     EnsureDB()
 
     local charKey = GetCharacterKey()
@@ -80,50 +90,52 @@ local function SetCurrentCategory(categoryKey)
             FGS_DB.characters[charKey].category = nil
         end
 
-        Print("Category set to: Global")
+        Print(FGS_GetLocalizedString("CATEGORY_SET_GLOBAL"))
         return
     end
 
     if not FGS_DB.categories[categoryKey] then
-        Print("Category not found: " .. tostring(categoryKey))
+        Print(FGS_GetLocalizedString("CATEGORY_NOT_FOUND", categoryKey))
         return
     end
 
     FGS_DB.characters[charKey] = FGS_DB.characters[charKey] or {}
     FGS_DB.characters[charKey].category = categoryKey
 
-    Print("Category set to: " .. tostring(categoryKey))
+    Print(FGS_GetLocalizedString("CATEGORY_SET_TO", categoryKey))
 end
 
 local function IsReservedCategoryKey(key)
+    -- Prevent using the reserved keyword "global" for custom categories
     return key == "global"
 end
 
 local function CreateCategory(key, gold)
+    -- Create a new custom category with a normalized key and target gold value
     EnsureDB()
 
     key = string.lower(key or "")
     key = key:gsub("%s+", "_")
 
     if key == "" then
-        Print("Invalid category key.")
+        Print(FGS_GetLocalizedString("INVALID_CATEGORY_KEY_UI"))
         return false
     end
 
     if IsReservedCategoryKey(key) then
-        Print("'global' is reserved and cannot be used as a category name.")
+        Print(FGS_GetLocalizedString("GLOBAL_RESERVED"))
         return false
     end
 
     if FGS_DB.categories[key] then
-        Print("Category already exists: " .. key)
+        Print(FGS_GetLocalizedString("CATEGORY_EXISTS", key))
         return false
     end
 
     local amount = tonumber(gold)
 
     if not amount or amount < 0 then
-        Print("Invalid gold value.")
+        Print(FGS_GetLocalizedString("INVALID_GOLD_VALUE"))
         return false
     end
 
@@ -134,32 +146,33 @@ local function CreateCategory(key, gold)
         builtIn = false,
     }
 
-    Print("Created category: " .. key .. " (" .. math.floor(amount) .. "g)")
+    Print(FGS_GetLocalizedString("CREATED_CATEGORY", key, amount))
     return true
 end
 
 local function DeleteCategory(categoryKey)
+    -- Delete a custom category and clear it from any characters using it
     EnsureDB()
 
     if not categoryKey or categoryKey == "" then
-        Print("No category selected.")
+        Print(FGS_GetLocalizedString("NO_CATEGORY_SELECTED"))
         return false
     end
 
     if categoryKey == "global" then
-        Print("'global' is not a category and cannot be deleted.")
+        Print(FGS_GetLocalizedString("GLOBAL_NOT_CATEGORY"))
         return false
     end
 
     local category = FGS_DB.categories[categoryKey]
 
     if not category then
-        Print("Category not found: " .. tostring(categoryKey))
+        Print(FGS_GetLocalizedString("CATEGORY_NOT_FOUND", categoryKey))
         return false
     end
 
     if category.builtIn then
-        Print("Built-in categories cannot be deleted.")
+        Print(FGS_GetLocalizedString("BUILT_IN_CANNOT_DELETE"))
         return false
     end
 
@@ -171,7 +184,7 @@ local function DeleteCategory(categoryKey)
         end
     end
 
-    Print("Deleted category: " .. categoryKey)
+    Print(FGS_GetLocalizedString("DELETED_CATEGORY", categoryKey))
     return true
 end
 
@@ -184,14 +197,14 @@ local Refresh
 
 local title = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
 title:SetPoint("TOPLEFT", 16, -16)
-title:SetText("Furanku Gold Sync")
+title:SetText(FGS_GetLocalizedString("PANEL_TITLE"))
 
 local statusText = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
 statusText:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -20)
 
 local categoryLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
 categoryLabel:SetPoint("TOPLEFT", statusText, "BOTTOMLEFT", 0, -25)
-categoryLabel:SetText("Character Category:")
+categoryLabel:SetText(FGS_GetLocalizedString("CHARACTER_CATEGORY"))
 
 local categoryDropdown = CreateFrame("Frame", "FGS_CategoryDropdown", panel, "UIDropDownMenuTemplate")
 categoryDropdown:SetPoint("LEFT", categoryLabel, "RIGHT", -10, -2)
@@ -220,11 +233,11 @@ end)
 
 local autoButton = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
 autoButton:SetPoint("TOPLEFT", categoryLabel, "BOTTOMLEFT", 0, -25)
-autoButton.Text:SetText("Enable auto sync for current selection")
+autoButton.Text:SetText(FGS_GetLocalizedString("ENABLE_AUTO_SYNC"))
 
 local targetLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
 targetLabel:SetPoint("TOPLEFT", autoButton, "BOTTOMLEFT", 0, -25)
-targetLabel:SetText("Target Gold:")
+targetLabel:SetText(FGS_GetLocalizedString("TARGET_GOLD_LABEL"))
 
 local targetBox = CreateFrame("EditBox", nil, panel, "InputBoxTemplate")
 targetBox:SetSize(120, 24)
@@ -235,7 +248,7 @@ targetBox:SetNumeric(true)
 local saveButton = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
 saveButton:SetSize(80, 24)
 saveButton:SetPoint("LEFT", targetBox, "RIGHT", 10, 0)
-saveButton:SetText("Save")
+saveButton:SetText(FGS_GetLocalizedString("SAVE_BUTTON"))
 
 local divider = panel:CreateTexture(nil, "ARTWORK")
 divider:SetColorTexture(0.5, 0.5, 0.5, 0.4)
@@ -244,11 +257,11 @@ divider:SetPoint("TOPLEFT", targetLabel, "BOTTOMLEFT", 0, -30)
 
 local createTitle = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
 createTitle:SetPoint("TOPLEFT", divider, "BOTTOMLEFT", 0, -18)
-createTitle:SetText("Create Category")
+createTitle:SetText(FGS_GetLocalizedString("CREATE_CATEGORY_TITLE"))
 
 local newCategoryLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
 newCategoryLabel:SetPoint("TOPLEFT", createTitle, "BOTTOMLEFT", 0, -15)
-newCategoryLabel:SetText("Key:")
+newCategoryLabel:SetText(FGS_GetLocalizedString("KEY_LABEL"))
 
 local newCategoryBox = CreateFrame("EditBox", nil, panel, "InputBoxTemplate")
 newCategoryBox:SetSize(120, 24)
@@ -257,7 +270,7 @@ newCategoryBox:SetAutoFocus(false)
 
 local newCategoryGoldLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
 newCategoryGoldLabel:SetPoint("LEFT", newCategoryBox, "RIGHT", 15, 0)
-newCategoryGoldLabel:SetText("Gold:")
+newCategoryGoldLabel:SetText(FGS_GetLocalizedString("GOLD_LABEL"))
 
 local newCategoryGoldBox = CreateFrame("EditBox", nil, panel, "InputBoxTemplate")
 newCategoryGoldBox:SetSize(100, 24)
@@ -268,12 +281,39 @@ newCategoryGoldBox:SetNumeric(true)
 local createButton = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
 createButton:SetSize(80, 24)
 createButton:SetPoint("LEFT", newCategoryGoldBox, "RIGHT", 10, 0)
-createButton:SetText("Create")
+createButton:SetText(FGS_GetLocalizedString("CREATE_BUTTON"))
 
 local deleteButton = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
 deleteButton:SetSize(140, 24)
 deleteButton:SetPoint("TOPLEFT", newCategoryLabel, "BOTTOMLEFT", 0, -25)
-deleteButton:SetText("Delete Selected")
+deleteButton:SetText(FGS_GetLocalizedString("DELETE_SELECTED"))
+
+local languageLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+languageLabel:SetPoint("TOPLEFT", deleteButton, "BOTTOMLEFT", 0, -25)
+languageLabel:SetText(FGS_GetLocalizedString("LANGUAGE_LABEL"))
+
+local languageDropdown = CreateFrame("Frame", "FGS_LanguageDropdown", panel, "UIDropDownMenuTemplate")
+languageDropdown:SetPoint("LEFT", languageLabel, "RIGHT", -10, -2)
+
+UIDropDownMenu_Initialize(languageDropdown, function(self, level)
+    local info = UIDropDownMenu_CreateInfo()
+    info.text = "English"
+    info.func = function()
+        FGS_DB.language = "enUS"
+        Print("Language set to English")
+        Refresh()
+    end
+    UIDropDownMenu_AddButton(info, level)
+
+    local deInfo = UIDropDownMenu_CreateInfo()
+    deInfo.text = "Deutsch"
+    deInfo.func = function()
+        FGS_DB.language = "deDE"
+        Print("Sprache auf Deutsch gesetzt")
+        Refresh()
+    end
+    UIDropDownMenu_AddButton(deInfo, level)
+end)
 
 -- =========================
 -- Refresh / Actions
@@ -293,9 +333,9 @@ Refresh = function()
     end
 
     statusText:SetText(
-        "Current Category: " .. categoryText .. "\n" ..
-        "Target Gold: " .. tostring(targetGold) .. "g\n" ..
-        "Auto Sync: " .. (autoSync and "Enabled" or "Disabled")
+        FGS_GetLocalizedString("CURRENT_CATEGORY_STATUS", categoryText) .. "\n" ..
+        FGS_GetLocalizedString("TARGET_GOLD_UI", targetGold) .. "\n" ..
+        FGS_GetLocalizedString("AUTO_SYNC_UI", autoSync and FGS_GetLocalizedString("ENABLED") or FGS_GetLocalizedString("DISABLED"))
     )
 
     UIDropDownMenu_SetText(categoryDropdown, categoryText)
@@ -308,6 +348,11 @@ Refresh = function()
         and category.builtIn ~= true
 
     deleteButton:SetEnabled(canDelete)
+
+    -- Set language dropdown
+    local currentLang = FGS_DB.language or GetLocale()
+    local langText = (currentLang == "deDE") and "Deutsch" or "English"
+    UIDropDownMenu_SetText(languageDropdown, langText)
 end
 
 autoButton:SetScript("OnClick", function(self)
@@ -318,10 +363,10 @@ autoButton:SetScript("OnClick", function(self)
 
     if categoryKey then
         FGS_DB.categories[categoryKey].autoSync = checked
-        Print("Auto sync for category '" .. categoryKey .. "' set to " .. (checked and "enabled" or "disabled"))
+        Print(FGS_GetLocalizedString("AUTO_SYNC_UI", checked and FGS_GetLocalizedString("ENABLED") or FGS_GetLocalizedString("DISABLED")))
     else
         FGS_DB.globalAutoSync = checked
-        Print("Global auto sync set to " .. (checked and "enabled" or "disabled"))
+        Print(FGS_GetLocalizedString("AUTO_SYNC_UI", checked and FGS_GetLocalizedString("ENABLED") or FGS_GetLocalizedString("DISABLED")))
     end
 
     Refresh()
@@ -333,7 +378,7 @@ saveButton:SetScript("OnClick", function()
     local value = tonumber(targetBox:GetText())
 
     if not value or value < 0 then
-        Print("Invalid target gold. Example: 50000")
+        Print(FGS_GetLocalizedString("INVALID_GOLD_AMOUNT"))
         return
     end
 
@@ -342,10 +387,10 @@ saveButton:SetScript("OnClick", function()
 
     if categoryKey then
         FGS_DB.categories[categoryKey].targetGold = amount
-        Print("Target gold for category '" .. categoryKey .. "' set to " .. amount .. "g")
+        Print(FGS_GetLocalizedString("TARGET_GOLD_CATEGORY_SET", categoryKey, amount))
     else
         FGS_DB.globalTargetGold = amount
-        Print("Global target gold set to " .. amount .. "g")
+        Print(FGS_GetLocalizedString("TARGET_GOLD_SET", tostring(amount)))
     end
 
     targetBox:ClearFocus()
