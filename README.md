@@ -146,10 +146,11 @@ FurankuGoldSync/
 
 ## 🔮 Roadmap
 
-- ✅ Multi-language support (EN/DE) - **Implemented in v1.1.0**
+- ✅ Multi-language support (EN/DE) - **Implemented in v1.2.0**
 - ✅ Per-character overrides for target gold and auto sync - **Implemented**
 - ✅ Advanced options panel - **Implemented**
 - 🎯 More fine-grained sync control
+- 🎯 More languages
 
 ---
 
